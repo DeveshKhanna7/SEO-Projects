@@ -1,0 +1,90 @@
+pip install requests beautifulsoup4
+import requests
+from bs4 import BeautifulSoup
+import re
+
+def fetch_page(url):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        return response.text
+    except requests.RequestException as e:
+        print(f"Error fetching {url}: {e}")
+        return None
+
+def check_title(soup):
+    title = soup.title.string if soup.title else ""
+    if title:
+        print(f"Title: {title} (Length: {len(title)})")
+    else:
+        print("No title tag found.")
+    return title
+
+def check_meta_description(soup):
+    meta = soup.find("meta", attrs={"name": "description"})
+    description = meta['content'] if meta else ""
+    if description:
+        print(f"Meta Description: {description} (Length: {len(description)})")
+    else:
+        print("No meta description tag found.")
+    return description
+
+def check_headers(soup):
+    headers = {"h1": 0, "h2": 0, "h3": 0, "h4": 0, "h5": 0, "h6": 0}
+    for header in headers.keys():
+        headers[header] = len(soup.find_all(header))
+        print(f"{header.upper()} tags found: {headers[header]}")
+    return headers
+
+def check_images(soup):
+    images = soup.find_all("img")
+    missing_alt = [img for img in images if not img.get("alt")]
+    print(f"Total images: {len(images)}")
+    print(f"Images without alt attribute: {len(missing_alt)}")
+    return len(images), len(missing_alt)
+
+def check_keywords(soup, keywords):
+    text = soup.get_text().lower()
+    keyword_count = {keyword: len(re.findall(keyword.lower(), text)) for keyword in keywords}
+    for keyword, count in keyword_count.items():
+        print(f"Keyword '{keyword}' found {count} times")
+    return keyword_count
+
+def seo_audit(url, keywords):
+    html_content = fetch_page(url)
+    if not html_content:
+        return
+
+    soup = BeautifulSoup(html_content, 'html.parser')
+
+    print(f"SEO Audit for {url}")
+    title = check_title(soup)
+    meta_description = check_meta_description(soup)
+    headers = check_headers(soup)
+    total_images, missing_alt = check_images(soup)
+    keyword_count = check_keywords(soup, keywords)
+
+keywords = ["link", "website", "url"]
+seo_audit("https://linktree.com", keywords)
+
+
+OUTPUT
+/
+/
+/
+/
+Linktree (Length: 8)
+H1 tags found: 1
+H2 tags found: 2
+H3 tags found: 0
+H4 tags found: 0
+H5 tags found: 0
+H6 tags found: 0
+Total images: 8
+Images without alt attribute: 3
+Keyword 'link' found 3 times
+Keyword 'website' found 1 times
+Keyword 'url' found 0 times
+SEO Audit for https://www.linktree.com
+
+
