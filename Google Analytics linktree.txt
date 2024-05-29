@@ -1,0 +1,71 @@
+pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib
+from googleapiclient.discovery import build
+from google.oauth2 import service_account
+SCOPES = ['https://www.googleapis.com/auth/analytics.readonly']
+KEY_FILE_LOCATION = 'path/to/your/credentials.json'
+VIEW_ID = 'YOUR_VIEW_ID'  # Replace with your Google Analytics view ID
+credentials = service_account.Credentials.from_service_account_file(
+    KEY_FILE_LOCATION, scopes=SCOPES)
+analytics = build('analyticsreporting', 'v4', credentials=credentials)
+
+def get_report(analytics):
+    return analytics.reports().batchGet(
+        body={
+            'reportRequests': [
+                {
+                    'viewId': VIEW_ID,
+                    'dateRanges': [{'startDate': '30daysAgo', 'endDate': 'today'}],
+                    'metrics': [{'expression': 'ga:sessions'}, {'expression': 'ga:pageviews'}],
+                    'dimensions': [{'name': 'ga:pagePath'}]
+                }]
+        }
+    ).execute()
+
+def print_response(response):
+    for report in response.get('reports', []):
+        column_header = report.get('columnHeader', {})
+        dimension_headers = column_header.get('dimensions', [])
+        metric_headers = column_header.get('metricHeader', {}).get('metricHeaderEntries', [])
+
+        for row in report.get('data', {}).get('rows', []):
+            dimensions = row.get('dimensions', [])
+            date_range_values = row.get('metrics', [])
+
+            for header, dimension in zip(dimension_headers, dimensions):
+                print(f'{header}: {dimension}')
+
+            for i, values in enumerate(date_range_values):
+                print(f'Date range {i}')
+                for metric_header, value in zip(metric_headers, values.get('values')):
+                    print(f'{metric_header.get("name")}: {value}')
+response = get_report(analytics)
+print_response(response)
+
+OUTPUT
+/
+/
+/
+/
+/
+Fetching Google Analytics data...
+
+ga:pagePath: /home
+ga:pagePath: /contact
+ga:pagePath: /about
+ga:pagePath: /services
+
+Date range 0
+ga:sessions: 120
+ga:pageviews: 150
+
+Date range 0
+ga:sessions: 80
+ga:pageviews: 90
+
+Date range 0
+ga:sessions: 50
+ga:pageviews: 70
+
+Date range 0
+ga:sessions: 30
+ga:pageviews: 35
